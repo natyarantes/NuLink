@@ -10,12 +10,14 @@ import CoreData
 
 @main
 struct NuLinkApp: App {
-    let persistenceController = PersistenceController.shared
-
+    
+    @StateObject private var vm = ShortenerViewModel()
+    
     var body: some Scene {
         WindowGroup {
-            ContentView()
-                .environment(\.managedObjectContext, persistenceController.container.viewContext)
+            NavigationStack {
+                ShortenerView(vm: vm)
+            }
         }
     }
 }

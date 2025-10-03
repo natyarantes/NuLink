@@ -128,9 +128,9 @@
 			buildPhases = (
 				60C8723C992F16ADA233E769 /* [CP] Check Pods Manifest.lock */,
 				29335DBB2E8F138D00DDCF2E /* Sources */,
-				29335E102E8F148400DDCF2E /* ShellScript */,
 				29335DBC2E8F138D00DDCF2E /* Frameworks */,
 				29335DBD2E8F138D00DDCF2E /* Resources */,
+				29335E102E8F148400DDCF2E /* Swift Lint */,
 			);
 			buildRules = (
 			);
@@ -255,7 +255,7 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		29335E102E8F148400DDCF2E /* ShellScript */ = {
+		29335E102E8F148400DDCF2E /* Swift Lint */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -263,14 +263,17 @@
 			inputFileListPaths = (
 			);
 			inputPaths = (
+				"$(SRCROOT)/.swiftlint.yml",
 			);
+			name = "Swift Lint";
 			outputFileListPaths = (
 			);
 			outputPaths = (
+				"$(DERIVED_FILE_DIR)/swiftlint.done",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "# Type a script or drag a script file from your workspace to insert its path.\nif [ -f \"${PODS_ROOT}/SwiftLint/swiftlint\" ]; then\n  \"${PODS_ROOT}/SwiftLint/swiftlint\" --config \"${SRCROOT}/.swiftlint.yml\"\nelse\n  echo \"warning: SwiftLint not installed via CocoaPods.\"\nfi\n";
+			shellScript = "# --- Skip in Previews / Index / non-Release ---\nif [ \"${ENABLE_PREVIEWS}\" = \"YES\" ] || \\\n   [ \"${XCODE_RUNNING_FOR_PREVIEWS}\" = \"1\" ] || \\\n   [ \"${ACTION}\" = \"indexbuild\" ]; then\n  echo \"SwiftLint skipped (Previews/IndexBuild).\"\n  exit 0\nfi\n\n# Só roda em Release \nif [ \"${CONFIGURATION}\" != \"Release\" ]; then\n  echo \"SwiftLint skipped in ${CONFIGURATION}.\"\n  exit 0\nfi\n\nCONFIG_FILE=\"${SRCROOT}/.swiftlint.yml\"\nBIN=\"${PODS_ROOT}/SwiftLint/swiftlint\"\n\nif [ -x \"$BIN\" ]; then\n  \"$BIN\" --quiet --config \"$CONFIG_FILE\"\n  # gera um “output” para satisfazer o dependency analysis\n  touch \"${DERIVED_FILE_DIR}/swiftlint.done\"\nelse\n  echo \"warning: SwiftLint binary not found or not executable at $BIN\"\nfi\n\n";
 		};
 		60C8723C992F16ADA233E769 /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
