@@ -73,13 +73,13 @@ struct ShortenerView: View {
     }
     
     private var actionButton: some View {
-        let isDisabled = vm.isloading || vm.inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        let isDisabled = vm.isLoading || vm.inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         
         return Button {
             isFocused = false
             Task { await vm.shorten() }
         } label: {
-            if vm.isloading {
+            if vm.isLoading {
                 ProgressView()
             } else {
                 Text("Encurtar link")
