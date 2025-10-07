@@ -6,32 +6,37 @@
 //
 
 import SwiftUI
+import UIKit
 
 struct ShortenerView: View {
-    
+
     @ObservedObject var vm: ShortenerViewModel
     @FocusState private var isFocused: Bool
     @Environment(\.openURL) private var openURL
     @State private var showCopiedToast = false
-    
+
     var body: some View {
         NavigationStack {
-            VStack(spacing: DSMetrics.paddingL) {
-                inputSection
-                actionButton
+            VStack(spacing: 0) {
+                VStack(spacing: DSMetrics.paddingL) {
+                    inputSection
+                    actionButton
+                }
+                .padding(.horizontal, DSMetrics.paddingL)
+                .padding(.vertical, 20)
+                .background(DS.Bg.app)
+                .shadow(color: .black.opacity(0.05), radius: 4, y: 2)
+                .zIndex(1)
                 contentSection
             }
-            .padding(.horizontal, DSMetrics.paddingL)
-            .padding(.top, 20)
-            .background(DS.Bg.app.ignoresSafeArea())
             .navigationTitle("NuLink")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Menu {
-                        Button(role: .destructive) {
-                            vm.clearAll()
+                        Button {
+                            vm.reset()
                         } label: {
-                            Label("Limpar histórico", systemImage: "trash")
+                            Label("Limpar tudo", systemImage: "trash")
                         }
                     } label: {
                         Image(systemName: "ellipsis.circle")
@@ -42,25 +47,25 @@ struct ShortenerView: View {
         .onTapGesture { isFocused = false }
         .toast(isPresented: $showCopiedToast, text: "Link copiado!")
     }
-    
+
     private var inputSection: some View {
         VStack(alignment: .leading, spacing: DSMetrics.paddingS) {
             Text("Cole ou digite a URL")
                 .font(DSType.section)
                 .foregroundColor(DS.Text.secondary)
-            
+
             HStack(spacing: DSMetrics.paddingS) {
-                TextField("https://exemplo.com", text: $vm.inputText)
+                TextField("https://exemplo.com", text: $vm.inputURL)
                     .keyboardType(.URL)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled(true)
                     .focused($isFocused)
                     .accessibilityIdentifier("urlInputField")
                     .nuField()
-                
-                if !vm.inputText.isEmpty {
+
+                if !vm.inputURL.isEmpty {
                     Button {
-                        vm.inputText = ""
+                        vm.inputURL = ""
                     } label: {
                         Image(systemName: "xmark.circle.fill")
                             .foregroundColor(DS.Text.secondary)
@@ -71,13 +76,13 @@ struct ShortenerView: View {
             }
         }
     }
-    
+
     private var actionButton: some View {
-        let isDisabled = vm.isLoading || vm.inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        
+        let isDisabled = vm.isLoading || vm.inputURL.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+
         return Button {
             isFocused = false
-            Task { await vm.shorten() }
+            vm.shorten()
         } label: {
             if vm.isLoading {
                 ProgressView()
@@ -92,13 +97,62 @@ struct ShortenerView: View {
     
     @ViewBuilder
     private var contentSection: some View {
-        if vm.items.isEmpty {
+        if let message = vm.errorMessage {
+            errorState(message)
+        } else if vm.items.isEmpty {
             emptyState
         } else {
-            listSection
+            ScrollView {
+                LazyVStack(spacing: DSMetrics.paddingM) {
+                    ForEach(vm.items) { item in
+                        NuCard {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text(item.short)
+                                    .font(.headline)
+                                    .foregroundStyle(DS.Accent.primary)
+                                    .textSelection(.enabled)
+
+                                Text(item.original)
+                                    .font(DSType.body)
+                                    .foregroundStyle(DS.Text.secondary)
+                                    .lineLimit(2)
+                                    .textSelection(.enabled)
+
+                                HStack(spacing: 12) {
+                                    Button {
+                                        UIPasteboard.general.string = item.short
+                                        showCopiedToast = true
+                                    } label: {
+                                        Label("Copiar", systemImage: "doc.on.doc")
+                                    }
+
+                                    if let url = URL(string: item.short) {
+                                        Button {
+                                            openURL(url)
+                                        } label: {
+                                            Label("Abrir", systemImage: "safari")
+                                        }
+                                    }
+                                }
+                                .buttonStyle(.bordered)
+                                .font(.subheadline)
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                        .animation(.spring(response: 0.4, dampingFraction: 0.8), value: vm.items)
+                    }
+                }
+                .padding(.horizontal, DSMetrics.paddingL)
+                .padding(.top, DSMetrics.paddingM)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .scrollDismissesKeyboard(.immediately)
+            .background(DS.Bg.app)
         }
     }
-    
+
+// MARK: - States
     private var emptyState: some View {
         VStack(spacing: 12) {
             Image(systemName: "link.badge.plus")
@@ -114,64 +168,29 @@ struct ShortenerView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding(.top, 24)
     }
-    
-    private var listSection: some View {
-        List {
-            Section("Recentes") {
-                ForEach(vm.items) { item in
-                    NuCard {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text(item.shortURL)
-                                .font(.headline)
-                                .foregroundStyle(DS.Accent.primary)
-                            
-                            Text(item.originalURL)
-                                .font(DSType.body)
-                                .foregroundStyle(DS.Text.secondary)
-                                .lineLimit(2)
-                            
-                            Text(item.alias)
-                                .font(DSType.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                    .contentShape(Rectangle())
-                    .onTapGesture {
-                        if let url = URL(string: item.shortURL) { openURL(url) }
-                    }
-                    .contextMenu {
-                        Button {
-                            UIPasteboard.general.string = item.shortURL
-                            showCopiedToast = true
-                        } label: {
-                            Label("Copiar link curto", systemImage: "doc.on.doc")
-                        }
-                        if let url = URL(string: item.shortURL) {
-                            ShareLink(item: url) { Label("Compartilhar", systemImage: "square.and.arrow.up") }
-                        }
-                        Button(role: .destructive) {
-                            vm.delete(itemID: item.id)
-                        } label: {
-                            Label("Excluir", systemImage: "trash")
-                        }
-                    }
-                }
-                .onDelete { idx in
-                    idx.map { vm.items[$0].id }.forEach(vm.delete(itemID:))
-                }
-            }
+
+    private func errorState(_ message: String) -> some View {
+        VStack(spacing: 12) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.system(size: 40, weight: .semibold))
+            Text("Ops, algo deu errado")
+                .font(DSType.title)
+            Text(message)
+                .font(DSType.body)
+                .foregroundStyle(DS.Text.secondary)
+                .multilineTextAlignment(.center)
         }
-        .listStyle(.insetGrouped)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(.top, 24)
+        .foregroundStyle(.orange)
     }
 }
 
-
-// MARK: - Toast simples
+// MARK: - Toast
 private struct ToastModifier: ViewModifier {
     @Binding var isPresented: Bool
     let text: String
-    
+
     func body(content: Content) -> some View {
         ZStack {
             content
@@ -195,26 +214,9 @@ private struct ToastModifier: ViewModifier {
         .animation(.easeInOut(duration: 0.2), value: isPresented)
     }
 }
+
 private extension View {
     func toast(isPresented: Binding<Bool>, text: String) -> some View {
         modifier(ToastModifier(isPresented: isPresented, text: text))
     }
-}
-
-// MARK: - Preview com dados mock
-#Preview {
-    let vm = ShortenerViewModel()
-    vm.items = [
-        ShortItemViewData(
-            originalURL: "https://nubank.com.br/alguma-pagina",
-            shortURL: "https://sho.rt/abc123",
-            alias: "abc123"
-        ) as ShortItemViewData,
-        ShortItemViewData(
-            originalURL: "https://apple.com",
-            shortURL: "https://sho.rt/xyz987",
-            alias: "xyz987"
-        ) as ShortItemViewData
-    ]
-    return NavigationStack { ShortenerView(vm: vm) }
 }

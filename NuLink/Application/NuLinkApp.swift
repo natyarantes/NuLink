@@ -11,7 +11,15 @@ import CoreData
 @main
 struct NuLinkApp: App {
     
-    @StateObject private var vm = ShortenerViewModel()
+    @StateObject private var vm: ShortenerViewModel
+    
+    init() {
+        let httpClient = URLSessionHTTPClient()
+        let api = URLShortenerAPI(client: httpClient)
+        let repo = RemoteURLShorteningRepository(api: api)
+        
+        _vm = StateObject(wrappedValue: ShortenerViewModel(repo: repo))
+    }
     
     var body: some Scene {
         WindowGroup {
