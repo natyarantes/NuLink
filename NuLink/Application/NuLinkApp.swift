@@ -10,12 +10,33 @@ import CoreData
 
 @main
 struct NuLinkApp: App {
-    let persistenceController = PersistenceController.shared
-
+    
+    @StateObject private var vm: ShortenerViewModel
+    
+    init() {
+#if DEBUG
+        let env = ProcessInfo.processInfo.environment
+        if env["UI_TESTING"] == "1",
+           let raw = env["UI_TEST_SCENARIO"],
+           let scenario = UITestScenario(rawValue: raw) {
+            let repo: URLShorteningRepository = UITestURLShorteningRepository(scenario: scenario)
+            _vm = StateObject(wrappedValue: ShortenerViewModel(repo: repo))
+            return
+        }
+#endif
+        
+        let httpClient = URLSessionHTTPClient()
+        let api = URLShortenerAPI(client: httpClient)
+        let repo = RemoteURLShorteningRepository(api: api)
+        
+        _vm = StateObject(wrappedValue: ShortenerViewModel(repo: repo))
+    }
+    
     var body: some Scene {
         WindowGroup {
-            ContentView()
-                .environment(\.managedObjectContext, persistenceController.container.viewContext)
+            NavigationStack {
+                ShortenerView(vm: vm)
+            }
         }
     }
 }
