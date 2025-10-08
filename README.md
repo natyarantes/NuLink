@@ -82,28 +82,9 @@ Arquitetura **MVVM**, camadas separadas e cobertura de testes (Xcode) **87%**.
 
 Arquitetura **MVVM** com separação de camadas (Presentation / Data).
 
-`NuLink/
-├─ App/
-│  └─ NuLinkApp.swift                         # composição de dependências (produção e UI Tests)
-├─ Presentation/
-│  ├─ ShortenerView.swift                     # UI (SwiftUI)
-│  └─ ShortenerViewModel.swift                # estado + orquestração
-├─ Data/
-│  ├─ Networking/
-│  │  ├─ NetworkError.swift                   # erros de rede tipados
-│  │  ├─ Endpoint.swift                       # builder de URLRequest
-│  │  ├─ URLSessionHTTPClient.swift           # cliente HTTP genérico (URLSession)
-│  │  └─ URLShortenerAPI.swift                # chamada /api/alias
-│  ├─ Repositories/
-│  │  ├─ ShortenResponseDTO.swift             # DTOs (Decodable)
-│  │  ├─ ShortenMapper.swift                  # DTO → domínio
-│  │  ├─ URLShorteningRepository.swift        # protocolo + entidade ShortLink
-│  │  └─ RemoteURLShorteningRepository.swift  # repo remoto
-│  ├─ Validation/
-│  │  └─ URLValidation.swift                  # sanitização de entrada
-│  └─ UITestDoubles.swift (DEBUG)             # dublês para UI Tests (cenários previsíveis)
-├─ NuLinkTests/                               # Unit tests (XCTest)
-└─ NuLinkUITests/                             # UI Tests (XCUITest)`
+
+<img width="565" height="781" alt="nulink_tree" src="https://github.com/user-attachments/assets/83af834d-055b-4d93-8ff4-5018b9bf7e9f" />
+
 
 **Fluxo:** `View` → `ViewModel` → `Repository` → `API/HTTPClient`\
 **Dados:** API → **DTO** → **Mapper** → `ShortLink` (domínio) → ViewModel → View.
