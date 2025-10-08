@@ -40,6 +40,7 @@ struct ShortenerView: View {
                         }
                     } label: {
                         Image(systemName: "ellipsis.circle")
+                            .accessibilityIdentifier("toolbar.more")
                     }
                 }
             }
@@ -86,6 +87,7 @@ struct ShortenerView: View {
         } label: {
             if vm.isLoading {
                 ProgressView()
+                    .accessibilityIdentifier("loadingIndicator")
             } else {
                 Text("Encurtar link")
             }
@@ -136,6 +138,7 @@ struct ShortenerView: View {
                                 }
                                 .buttonStyle(.bordered)
                                 .font(.subheadline)
+                                .accessibilityIdentifier("shortLinkCard")
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
                         }
